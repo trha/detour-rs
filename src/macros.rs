@@ -25,7 +25,7 @@
 /// fn add5(val: i32) -> i32 {
 ///   val + 5
 /// }
-/// fn add10(val: i32) -> i32 {
+/// fn add10(_: fn(i32) -> i32, val: i32) -> i32 {
 ///   val + 10
 /// }
 ///
@@ -46,7 +46,7 @@
 ///   assert_eq!(unsafe { Test.get().unwrap().call(1) }, 6);
 ///
 ///   // ... and change the detour whilst hooked
-///   hook.set_detour(|val| val - 5);
+///   hook.set_detour(|_, val| val - 5);
 ///   assert_eq!(add5(5), 0);
 ///
 ///   unsafe { hook.disable().unwrap() };
@@ -156,7 +156,8 @@ macro_rules! static_detours {
                         $($argument_name: $argument_type),*) -> $return_type {
                     #[allow(unused_unsafe)]
                     let data = unsafe { DATA.load(Ordering::SeqCst).as_ref().unwrap() };
-                    (data.closure)($($argument_name),*)
+                    let tram = unsafe { ::std::mem::transmute(data.detour.trampoline()) };
+                    (data.closure)(tram, $($argument_name),*)
                 }
 
                 $crate::StaticDetourController::__new(&DATA, __ffi_detour)

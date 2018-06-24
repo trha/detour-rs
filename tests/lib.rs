@@ -96,7 +96,12 @@ mod statik {
   #[test]
   fn test() {
     unsafe {
-      let mut hook = DetourAdd.initialize(add, |x, y| x - y).unwrap();
+      let mut hook = DetourAdd
+        .initialize(add, |org, x, y| {
+          assert_eq!(x + y, org(x, y));
+          x - y
+        })
+        .unwrap();
 
       assert_eq!(add(10, 5), 15);
       assert_eq!(hook.is_enabled(), false);
